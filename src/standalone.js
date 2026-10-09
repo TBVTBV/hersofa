@@ -7,9 +7,11 @@
    add ?host to the URL. Phones: the QR code on the lobby screen. */
 (function () {
   var PAGES_URL = 'https://tbvtbv.github.io/hersofa/';
+  // Tried in this order by the big screen; phones use whichever one it picked.
   var BROKERS = [
-    { id: 'h', url: 'wss://broker.hivemq.com:8884/mqtt' },
-    { id: 'e', url: 'wss://broker.emqx.io:8084/mqtt' }
+    { id: 'e', url: 'wss://broker.emqx.io:8084/mqtt' },
+    { id: 'm', url: 'wss://test.mosquitto.org:8081/mqtt' },
+    { id: 'h', url: 'wss://broker.hivemq.com:8884/mqtt' }
   ];
   var TOPIC_ROOT = 'hersofa/v1/';
   var HEARTBEAT_MS = 15000;

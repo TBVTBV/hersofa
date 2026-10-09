@@ -25,12 +25,12 @@ page knows which game to join.
 ## How it connects
 
 The screen and the phones exchange small messages through a free public
-MQTT broker (HiveMQ, with EMQX as a fallback) over secure WebSockets. Only
-names, answers and scores travel. Messages go to a random game code, so
-other games never mix with yours.
+MQTT broker (EMQX, with Mosquitto and HiveMQ as fallbacks) over secure
+WebSockets. Only names, answers and scores travel. Messages go to a random
+game code, so other games never mix with yours.
 
-Phones on the same Wi-Fi as the screen work best. Do a test run with one or
-two phones before the party.
+Phones can be on Wi-Fi or mobile data. Do a test run with one or two phones
+before the party.
 
 ## Editing
 
