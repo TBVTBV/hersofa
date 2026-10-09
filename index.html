@@ -583,7 +583,7 @@ button { cursor: pointer; }
       <button type="button" id="btn-full">Full screen</button>
       <button type="button" id="btn-reset">Reset game</button>
       <div id="reset-confirm" hidden>
-        <p>Reset the game? Scores and players are cleared, and phones go back to waiting.</p>
+        <p>Reset the game? Scores and players are cleared, and every phone has to join again.</p>
         <div class="confirm-row"><button type="button" class="danger" id="btn-reset-yes">Reset</button><button type="button" id="btn-reset-no">Cancel</button></div>
       </div>
     </div>
@@ -600,6 +600,7 @@ button { cursor: pointer; }
   <section class="ps" data-p="join">
     <p class="p-word">HERSÖFA</p>
     <p class="p-sub">IKEA or War Criminal?</p>
+    <p class="p-text" id="join-note" hidden>A new game started. Enter your name to join.</p>
     <form class="join-form" id="join-form">
       <label for="join-name">Your name</label>
       <input id="join-name" maxlength="16" autocomplete="nickname" autocapitalize="words" enterkeyhint="go" required>
@@ -943,7 +944,7 @@ button { cursor: pointer; }
         if (pr.role === 'host') return;
         var cid = typeof pr.cid === 'string' ? pr.cid.slice(0, 24) : '';
         var name = cleanName(pr.name);
-        if (!cid || !name) return;
+        if (!cid || !name || pr.j !== state.gid) return;
         present[cid] = true;
         var pl = state.players[cid];
         if (!pl) {
@@ -1028,7 +1029,7 @@ button { cursor: pointer; }
       }
     }
     function canGoBack() { return /^(opener|title|rules|lobby|ready|detail|board|final)$/.test(state.phase); }
-    function resetGame() { state = freshState(); commit(); if (room) ingest(room.peers()); }
+    function resetGame() { state = freshState(); shownTickets = {}; lastServing = null; commit(); }
 
     // ---------- rendering ----------
     function screenKey() {
@@ -1397,6 +1398,7 @@ button { cursor: pointer; }
     var cid = tabStore.get('hersofa-cid');
     if (!cid) { cid = rid(); tabStore.set('hersofa-cid', cid); }
     var name = cleanName(tabStore.get('hersofa-name') || '');
+    var joinedGid = name ? (tabStore.get('hersofa-gid') || null) : null;
     var room = null, host = null, online = true;
     var TEXT = window.HERSOFA_TEXT || {};
     var local = { gid: null, q: -1, ans: null, keyAsk: false, keyShown: false, qStart: 0 };
@@ -1425,7 +1427,23 @@ button { cursor: pointer; }
       return best ? best.presence : null;
     }
 
+    function leaveGame() {
+      name = ''; joinedGid = null;
+      cid = rid();
+      tabStore.set('hersofa-cid', cid); tabStore.set('hersofa-name', ''); tabStore.set('hersofa-gid', '');
+      if (room) room.presence({ cid: null, name: null, j: null, g: null, q: null, a: null, k: null }).catch(function () {});
+      $('join-name').value = '';
+      $('join-note').hidden = false;
+    }
     function update() {
+      if (name && host && host.gid) {
+        if (!joinedGid) {
+          joinedGid = host.gid; tabStore.set('hersofa-gid', joinedGid);
+          if (room) room.presence({ cid: cid, name: name, j: joinedGid }).catch(function () {});
+        } else if (joinedGid !== host.gid) {
+          leaveGame();
+        }
+      }
       if (!name) { show('join'); return; }
       if (!host) {
         $('p-wait-head').textContent = 'You’re in.';
@@ -1514,7 +1532,10 @@ button { cursor: pointer; }
       if (!n) { $('join-name').focus(); return; }
       name = n;
       tabStore.set('hersofa-name', name);
-      if (room) room.presence({ cid: cid, name: name }).catch(function () {});
+      $('join-note').hidden = true;
+      joinedGid = host && host.gid ? host.gid : null;
+      tabStore.set('hersofa-gid', joinedGid || '');
+      if (room) room.presence(joinedGid ? { cid: cid, name: name, j: joinedGid } : { cid: cid, name: name }).catch(function () {});
       update();
     });
     Array.prototype.forEach.call(document.querySelectorAll('.pa'), function (b) {
@@ -1543,7 +1564,7 @@ button { cursor: pointer; }
     use('room').then(function (r) {
       room = r;
       if (!room) { error(TEXT.noRoom || 'This phone couldn’t connect. Sign in to Claude with the email the host invited, then open the link again.'); return; }
-      if (name) room.presence({ cid: cid, name: name }).catch(function () {});
+      if (name) room.presence(joinedGid ? { cid: cid, name: name, j: joinedGid } : { cid: cid, name: name }).catch(function () {});
       var onFail = function (e) {
         if (e && e.code === 'not_granted') error(TEXT.notGranted || 'This phone isn’t signed in to Claude with an email the host invited. Sign in, then open the link again.');
         else error(TEXT.closed || 'The connection to the game closed. Reload this page to rejoin.');
