@@ -27,7 +27,7 @@
 html, body { height: 100%; }
 body { background: var(--night); color: var(--paper); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
 button, input { font: inherit; }
-button { cursor: pointer; }
+button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
 .num { font-variant-numeric: tabular-nums; }
 .fit { white-space: nowrap; }
@@ -329,7 +329,7 @@ button { cursor: pointer; }
 /* ---------- phone controller ---------- */
 .is-player { background: var(--blue); }
 #player { min-height: 100%; display: flex; flex-direction: column; }
-.ps { display: none; flex: 1; flex-direction: column; gap: 16px; padding-block: 24px; padding-inline: 16px; }
+.ps { display: none; flex: 1; flex-direction: column; gap: 16px; padding-top: 24px; padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)); padding-inline: 16px; }
 .ps.on { display: flex; animation: fadeUp .35s var(--ease-out) both; }
 .p-word { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 56px; line-height: .9; color: var(--yellow); }
 .p-sub { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 22px; }
@@ -344,7 +344,7 @@ button { cursor: pointer; }
 .pq-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .pq-name { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 34px; line-height: 1; color: var(--yellow); min-width: 0; flex: 1; }
 .pq-secs { font-family: var(--f-display); font-weight: 800; font-size: 28px; }
-.pq-btns { flex: 1; display: grid; grid-template-rows: repeat(3, minmax(84px, 1fr)); gap: 10px; }
+.pq-btns { flex: 1; display: grid; grid-template-rows: repeat(3, minmax(72px, 1fr)); gap: 10px; }
 .pa { border: 0; font-family: var(--f-display); font-weight: 800; font-size: 26px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: transform .1s; }
 .pa:active { transform: scale(.97); }
 .pa-ikea { background: var(--yellow); color: var(--ink); }
@@ -354,15 +354,17 @@ button { cursor: pointer; }
 .pq-btns.hinted .pa:not(.is-key) { opacity: .35; }
 .pa.is-key { outline: 5px solid var(--yellow); outline-offset: -5px; animation: pulse 1s ease-in-out infinite; }
 .pa-ikea.is-key { outline-color: var(--ink); }
-.pq-key { display: flex; flex-direction: column; gap: 8px; }
-.key-btn { border: 2px solid var(--paper); background: transparent; color: var(--paper); font-weight: 700; padding: 12px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.key-btn svg { width: 28px; height: 18px; }
-.key-confirm { background: var(--paper); color: var(--ink); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-.key-confirm p { margin: 0; font-size: 15px; line-height: 1.4; }
-.key-confirm .confirm-row button { flex: 1; border: 0; padding: 12px; font-weight: 700; }
+.pq-key { display: flex; flex-direction: column; gap: 10px; }
+.key-btn { width: 100%; min-height: 68px; border: 3px solid var(--yellow); background: rgba(255,211,31,.12); color: var(--yellow); font-family: var(--f-display); font-weight: 800; font-size: 22px; padding: 12px 16px; display: flex; align-items: center; justify-content: center; gap: 14px; transition: transform .1s; }
+.key-btn:active { transform: scale(.97); background: rgba(255,211,31,.25); }
+.key-btn svg { width: 40px; height: 26px; flex: none; }
+.key-confirm { background: var(--paper); color: var(--ink); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.key-confirm p { margin: 0; font-size: 17px; line-height: 1.4; }
+.key-confirm .confirm-row button { flex: 1; min-height: 60px; border: 0; padding: 12px; font-family: var(--f-display); font-weight: 800; font-size: 20px; }
+.key-confirm .confirm-row button:active { transform: scale(.97); }
 .key-yes { background: var(--ink); color: var(--paper); }
 .key-no { background: var(--sheet); color: var(--ink); }
-.key-used { margin: 0; text-align: center; color: #c9d8f0; font-size: 14px; }
+.key-used { margin: 0; text-align: center; color: #c9d8f0; font-size: 16px; padding-block: 6px; }
 .p-big { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 52px; line-height: 1; }
 .p-pts { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 40px; color: var(--yellow); }
 .result-card { background: var(--paper); color: var(--ink); padding: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 17px; }
