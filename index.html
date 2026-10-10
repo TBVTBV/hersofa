@@ -286,7 +286,9 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
 .board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2em; border-bottom: 4px solid var(--ink); padding-bottom: .4em; }
 .board-h { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 5em; line-height: 1; }
 .board-sub { margin: 0; font-size: 1.6em; }
-.board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5em; }
+.board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5em; flex: 1 1 auto; min-height: 0; }
+.board-list.full li { grid-template-columns: 3.4em minmax(0, 1fr) auto; }
+.board-list.two-col { display: grid; grid-auto-flow: column; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--rows), auto); column-gap: 1.2em; row-gap: .5em; align-content: start; }
 .board-list li { display: grid; grid-template-columns: 4em minmax(0, 1fr) auto auto; gap: 1.4em; align-items: baseline; background: var(--paper); padding: .5em 1em; font-size: 1.8em; }
 .s-board.go .board-list li { animation: slideIn .5s var(--ease-out) both; }
 @keyframes slideIn { from { opacity: 0; transform: translateX(-4%); } to { opacity: 1; transform: none; } }
@@ -560,7 +562,7 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
   <section class="scr s-detail" data-s="detail" id="s-detail"></section>
 
   <section class="scr s-board" data-s="board">
-    <div class="board-head"><h2 class="board-h">Leaderboard</h2><p class="board-sub num" id="board-sub"></p></div>
+    <div class="board-head"><h2 class="board-h" id="board-h">Leaderboard</h2><p class="board-sub num" id="board-sub"></p></div>
     <ol class="board-list num" id="board-list"></ol>
   </section>
 
@@ -1014,6 +1016,7 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
         case 'reveal': if (hasDetail(state.q)) go('detail'); else afterRound(); break;
         case 'detail': afterRound(); break;
         case 'board': startQuestion(state.q + 1); break;
+        case 'final': go('results'); break;
         default: break;
       }
     }
@@ -1027,10 +1030,11 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
         case 'detail': go('reveal'); break;
         case 'board':
         case 'final': go(hasDetail(state.q) ? 'detail' : 'reveal'); break;
+        case 'results': go('final'); break;
         default: break;
       }
     }
-    function canGoBack() { return /^(opener|title|rules|lobby|ready|detail|board|final)$/.test(state.phase); }
+    function canGoBack() { return /^(opener|title|rules|lobby|ready|detail|board|final|results)$/.test(state.phase); }
     function resetGame() { state = freshState(); shownTickets = {}; lastServing = null; commit(); }
 
     // ---------- rendering ----------
@@ -1044,8 +1048,9 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
       var key = screenKey();
       var fresh = key !== shownKey;
       shownKey = key;
+      var screen = state.phase === 'results' ? 'board' : state.phase;
       Array.prototype.forEach.call(document.querySelectorAll('#host .scr'), function (el) {
-        var on = el.getAttribute('data-s') === state.phase;
+        var on = el.getAttribute('data-s') === screen;
         el.classList.toggle('on', on);
         if (!on) el.classList.remove('go');
         else if (fresh) { el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); }
@@ -1239,11 +1244,18 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
         if (k < 1) requestAnimationFrame(step);
       })(start);
     }
-    function renderBoard(fresh) {
-      $('board-sub').textContent = 'After ' + (state.q + 1) + ' of ' + Q.length;
+    function renderBoard(fresh, full) {
+      var all = ranked(state.players);
+      $('board-h').textContent = full ? 'Final results' : 'Leaderboard';
+      $('board-sub').textContent = full ? (all.length === 1 ? '1 player' : all.length + ' players') : 'After ' + (state.q + 1) + ' of ' + Q.length;
       var ol = $('board-list');
       ol.textContent = '';
-      var list = ranked(state.players).slice(0, 10);
+      ol.style.fontSize = '';
+      var list = full ? all : all.slice(0, 10);
+      var twoCol = full && list.length > 8;
+      ol.classList.toggle('two-col', twoCol);
+      ol.classList.toggle('full', !!full);
+      ol.style.setProperty('--rows', String(Math.ceil(list.length / 2)));
       if (!list.length) { var p = document.createElement('p'); p.className = 'board-empty'; p.textContent = 'No players yet.'; ol.appendChild(p); return; }
       list.forEach(function (pl, i) {
         var li = document.createElement('li');
@@ -1253,9 +1265,15 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
         var st = document.createElement('span'); st.className = 'b-streak'; st.textContent = pl.streak >= 2 ? pl.streak + ' in a row' : '';
         var sc = document.createElement('span'); sc.className = 'b-score';
         if (fresh) countUp(sc, pl.score); else sc.textContent = fmt(pl.score);
-        li.appendChild(r); li.appendChild(n); li.appendChild(st); li.appendChild(sc);
+        li.appendChild(r); li.appendChild(n); if (!full) li.appendChild(st); li.appendChild(sc);
         ol.appendChild(li);
       });
+      if (full) {
+        var size = 1, guard = 0;
+        ol.style.overflow = 'hidden';
+        while (ol.scrollHeight > ol.clientHeight + 1 && size > 0.45 && guard++ < 40) { size -= 0.05; ol.style.fontSize = size.toFixed(2) + 'em'; }
+        ol.style.overflow = '';
+      }
     }
     function renderFinal(fresh) {
       var list = ranked(state.players);
@@ -1310,8 +1328,8 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
     function render() {
       var fresh = showScreen();
       var p = state.phase;
-      $('btn-next').textContent = p === 'question' ? 'Close question' : (p === 'ready' ? 'Start now' : (p === 'final' ? 'Done' : 'Next'));
-      $('btn-next').disabled = p === 'final';
+      $('btn-next').textContent = p === 'question' ? 'Close question' : (p === 'ready' ? 'Start now' : (p === 'final' ? 'Full results' : (p === 'results' ? 'Done' : 'Next')));
+      $('btn-next').disabled = p === 'results';
       $('btn-back').disabled = !canGoBack();
       if (p === 'opener') renderOpener(fresh);
       if (p === 'title') renderTitle(fresh);
@@ -1328,7 +1346,7 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
       if (p === 'question') renderQuestion(fresh);
       if (p === 'reveal') renderReveal(fresh);
       if (p === 'detail') renderDetail(fresh);
-      if (p === 'board') renderBoard(fresh);
+      if (p === 'board' || p === 'results') renderBoard(fresh, p === 'results');
       if (p === 'final') renderFinal(fresh);
     }
 
@@ -1473,7 +1491,7 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
         renderQuestion(); return;
       }
       if ((ph === 'reveal' || ph === 'detail' || ph === 'board') && r[7] === host.q) { renderResult(r); return; }
-      if (ph === 'final') { renderFinal(r); return; }
+      if (ph === 'final' || ph === 'results') { renderFinal(r); return; }
       var mid = ph === 'reveal' || ph === 'detail' || ph === 'board';
       $('p-wait-head').textContent = mid ? 'Sit this one out' : 'You’re in.';
       $('p-ticket').textContent = pad2(r[0]);
